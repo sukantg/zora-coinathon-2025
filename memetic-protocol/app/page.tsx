@@ -26,12 +26,26 @@ export default function MemeHome() {
   const handleGenerateImage = async () => {
     setAiLoading(true);
     setStatus("Generating image with AI...");
-    // TODO: Call your AI image generation API here
-    setTimeout(() => {
-      setImage("/hero.png"); // Placeholder image
-      setAiLoading(false);
-      setStatus(null);
-    }, 2000);
+    setImage(null);
+    try {
+      const res = await fetch("/api/generate-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: aiPrompt }),
+      });
+      const data = await res.json();
+      if (res.ok && data.imageUrl) {
+        setImage(data.imageUrl);
+        setStatus(null);
+      } else if (data.error) {
+        setStatus(`Error: ${data.error}`);
+      } else {
+        setStatus("Failed to generate image. Try again.");
+      }
+    } catch (err) {
+      setStatus("Network error generating image. Try again.");
+    }
+    setAiLoading(false);
   };
 
   // Placeholder: handle AI caption generation
