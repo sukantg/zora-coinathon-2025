@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 
 export default function MemeHome() {
-  const [tab, setTab] = useState<"upload" | "generate">("upload");
+  const [tab, setTab] = useState<"upload" | "generate">("generate");
   const [image, setImage] = useState<string | null>(null);
   const [caption, setCaption] = useState("");
   const [captionLoading, setCaptionLoading] = useState(false);
@@ -11,6 +11,15 @@ export default function MemeHome() {
   const [aiLoading, setAiLoading] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Advanced Meme Prompt Builder state
+  const [memeSubject, setMemeSubject] = useState("");
+  const [memeStyle, setMemeStyle] = useState("Classic");
+  const [memeVibe, setMemeVibe] = useState("Funny");
+  const [extraDetails, setExtraDetails] = useState("");
+
+  // Compose the advanced prompt
+  const advancedPrompt = `A ${memeVibe.toLowerCase()} ${memeStyle.toLowerCase()} meme about ${memeSubject || "[subject]"}${extraDetails ? ", " + extraDetails : ""}`;
 
   // Placeholder: handle image upload
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -31,7 +40,7 @@ export default function MemeHome() {
       const res = await fetch("/api/generate-image", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: aiPrompt }),
+        body: JSON.stringify({ prompt: advancedPrompt }),
       });
       const data = await res.json();
       if (res.ok && data.imageUrl) {
@@ -53,12 +62,26 @@ export default function MemeHome() {
   const handleGenerateCaption = async () => {
     setCaptionLoading(true);
     setStatus("Generating caption with GPT-4...");
-    // TODO: Call your GPT-4 caption API here
-    setTimeout(() => {
-      setCaption("When you use AI to make memes...");
-      setCaptionLoading(false);
-      setStatus(null);
-    }, 1500);
+    try {
+      const res = await fetch("/api/generate-caption", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: advancedPrompt }),
+      });
+      const data = await res.json();
+      if (res.ok && data.caption) {
+        setCaption(data.caption);
+        setStatus(null);
+      } else if (data.error) {
+        setStatus(`Error: ${data.error}`);
+      } else {
+        setStatus("Failed to generate caption. Try again.");
+      }
+    } catch (err) {
+      console.error(err);
+      setStatus("Network error generating caption. Try again.");
+    }
+    setCaptionLoading(false);
   };
 
   // Placeholder: handle minting
@@ -108,18 +131,18 @@ export default function MemeHome() {
         {/* Tabs */}
         <div className="flex mb-8 w-full gap-2">
           <button
-            className={`flex-1 py-3 rounded-l-full font-semibold transition-colors text-lg shadow-sm ${tab === "upload" ? "bg-[var(--app-accent)] text-white" : "bg-[var(--app-gray-dark)] text-[var(--app-foreground-muted)]"}`}
-            onClick={() => setTab("upload")}
+            className={`flex-1 py-3 rounded-l-full font-semibold transition-colors text-lg shadow-sm ${tab === "generate" ? "bg-[var(--app-accent)] text-white" : "bg-[var(--app-gray-dark)] text-[var(--app-foreground-muted)]"}`}
+            onClick={() => setTab("generate")}
             style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0 }}
           >
-            Upload Image
+            Generate with AI
           </button>
           <button
-            className={`flex-1 py-3 rounded-r-full font-semibold transition-colors text-lg shadow-sm ${tab === "generate" ? "bg-[var(--app-accent)] text-white" : "bg-[var(--app-gray-dark)] text-[var(--app-foreground-muted)]"}`}
-            onClick={() => setTab("generate")}
+            className={`flex-1 py-3 rounded-r-full font-semibold transition-colors text-lg shadow-sm ${tab === "upload" ? "bg-[var(--app-accent)] text-white" : "bg-[var(--app-gray-dark)] text-[var(--app-foreground-muted)]"}`}
+            onClick={() => setTab("upload")}
             style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}
           >
-            Generate with AI
+            Upload Image
           </button>
         </div>
 
@@ -162,18 +185,77 @@ export default function MemeHome() {
           </div>
         ) : (
           <div className="w-full flex flex-col items-center mb-8 gap-3">
-            <input
-              type="text"
-              placeholder="Describe your meme idea..."
-              className="w-full px-5 py-3 rounded-full border border-[var(--app-card-border)] mb-2 focus:outline-none focus:ring-2 focus:ring-[var(--app-accent)] text-lg"
-              value={aiPrompt}
-              onChange={e => setAiPrompt(e.target.value)}
-              disabled={aiLoading}
-            />
+            {/* Advanced Meme Generator Prompt Builder */}
+            <div className="w-full bg-[var(--app-card-bg)] border border-[var(--app-card-border)] rounded-2xl shadow p-5 mb-2">
+              <div className="mb-3">
+                <label className="block font-semibold mb-1 text-[var(--app-foreground)]">Meme Subject</label>
+                <input
+                  type="text"
+                  className="w-full px-4 py-2 rounded-full border border-[var(--app-card-border)] focus:outline-none focus:ring-2 focus:ring-[var(--app-accent)] text-base text-black"
+                  placeholder="e.g. cat on a skateboard"
+                  value={memeSubject}
+                  onChange={e => setMemeSubject(e.target.value)}
+                  disabled={aiLoading}
+                />
+              </div>
+              <div className="flex gap-3 mb-3">
+                <div className="flex-1">
+                  <label className="block font-semibold mb-1 text-[var(--app-foreground)]">Style</label>
+                  <select
+                    className="w-full px-4 py-2 rounded-full border border-[var(--app-card-border)] focus:outline-none focus:ring-2 focus:ring-[var(--app-accent)] text-base text-black"
+                    value={memeStyle}
+                    onChange={e => setMemeStyle(e.target.value)}
+                    disabled={aiLoading}
+                  >
+                    <option>Classic</option>
+                    <option>Surreal</option>
+                    <option>Dank</option>
+                    <option>Wholesome</option>
+                    <option>Minimal</option>
+                    <option>Retro</option>
+                    <option>Pixel Art</option>
+                  </select>
+                </div>
+                <div className="flex-1">
+                  <label className="block font-semibold mb-1 text-[var(--app-foreground)]">Vibe</label>
+                  <select
+                    className="w-full px-4 py-2 rounded-full border border-[var(--app-card-border)] focus:outline-none focus:ring-2 focus:ring-[var(--app-accent)] text-base text-black"
+                    value={memeVibe}
+                    onChange={e => setMemeVibe(e.target.value)}
+                    disabled={aiLoading}
+                  >
+                    <option>Funny</option>
+                    <option>Ironic</option>
+                    <option>Motivational</option>
+                    <option>Sarcastic</option>
+                    <option>Absurd</option>
+                    <option>Dark</option>
+                    <option>Wholesome</option>
+                  </select>
+                </div>
+              </div>
+              <div className="mb-3">
+                <label className="block font-semibold mb-1 text-[var(--app-foreground)]">Extra Details <span className="font-normal text-xs text-[var(--app-foreground-muted)]">(optional)</span></label>
+                <textarea
+                  className="w-full px-4 py-2 rounded-2xl border border-[var(--app-card-border)] focus:outline-none focus:ring-2 focus:ring-[var(--app-accent)] text-base resize-none text-black"
+                  placeholder="e.g. add sunglasses, vaporwave background"
+                  value={extraDetails}
+                  onChange={e => setExtraDetails(e.target.value)}
+                  rows={2}
+                  disabled={aiLoading}
+                />
+              </div>
+              <div className="mt-4">
+                <div className="text-xs text-[var(--app-foreground-muted)] mb-1">Prompt Preview:</div>
+                <div className="bg-[var(--app-gray)] rounded-xl px-4 py-2 text-sm text-[var(--app-foreground)] font-mono break-words border border-[var(--app-card-border)]">
+                  {advancedPrompt}
+                </div>
+              </div>
+            </div>
             <button
               className="bg-[var(--app-accent)] text-white px-8 py-3 rounded-full font-semibold shadow-lg hover:bg-[var(--app-accent-hover)] transition text-lg"
               onClick={handleGenerateImage}
-              disabled={aiLoading || !aiPrompt}
+              disabled={aiLoading || !memeSubject}
             >
               {aiLoading ? "Generating..." : "Generate Image"}
             </button>
@@ -186,7 +268,7 @@ export default function MemeHome() {
             <input
               type="text"
               placeholder="Add a caption or let AI help..."
-              className="flex-1 px-5 py-3 rounded-full border border-[var(--app-card-border)] focus:outline-none focus:ring-2 focus:ring-[var(--app-accent)] text-lg"
+              className="flex-1 px-5 py-3 rounded-full border border-[var(--app-card-border)] focus:outline-none focus:ring-2 focus:ring-[var(--app-accent)] text-lg text-black"
               value={caption}
               onChange={e => setCaption(e.target.value)}
               disabled={captionLoading}
