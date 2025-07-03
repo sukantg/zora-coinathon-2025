@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import React, { useState, useRef } from "react";
 
 export default function MemeHome() {
   const [tab, setTab] = useState<"upload" | "generate">("generate");
@@ -16,6 +16,13 @@ export default function MemeHome() {
   const [memeStyle, setMemeStyle] = useState("Classic");
   const [memeVibe, setMemeVibe] = useState("Funny");
   const [extraDetails, setExtraDetails] = useState("");
+
+  // Caption customization state
+  const [captionFont, setCaptionFont] = useState("Garamond, serif");
+  const [captionFontSize, setCaptionFontSize] = useState(32);
+  const [captionPos, setCaptionPos] = useState({ x: 50, y: 85 }); // percent, default bottom center
+  const [dragging, setDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
   // Compose the advanced prompt
   const advancedPrompt = `A ${memeVibe.toLowerCase()} ${memeStyle.toLowerCase()} meme about ${memeSubject || "[subject]"}${extraDetails ? ", " + extraDetails : ""}`;
@@ -101,6 +108,40 @@ export default function MemeHome() {
     }, 1500);
   };
 
+  // Handle drag events for caption
+  const handleCaptionMouseDown = (e: React.MouseEvent<HTMLSpanElement, MouseEvent>) => {
+    if (!image) return;
+    setDragging(true);
+    const rect = (e.target as HTMLElement).getBoundingClientRect();
+    setDragOffset({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    });
+    e.preventDefault();
+  };
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!dragging || !image) return;
+    const container = document.getElementById("meme-image-container");
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+    let x = ((e.clientX - rect.left - dragOffset.x) / rect.width) * 100;
+    let y = ((e.clientY - rect.top - dragOffset.y) / rect.height) * 100;
+    x = Math.max(0, Math.min(100, x));
+    y = Math.max(0, Math.min(100, y));
+    setCaptionPos({ x, y });
+  };
+  const handleMouseUp = () => setDragging(false);
+  React.useEffect(() => {
+    if (dragging) {
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
+      return () => {
+        window.removeEventListener("mousemove", handleMouseMove);
+        window.removeEventListener("mouseup", handleMouseUp);
+      };
+    }
+  });
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[var(--app-background)] to-[var(--app-gray)] flex flex-col items-center py-8 px-2">
       {/* App Title */}
@@ -147,19 +188,48 @@ export default function MemeHome() {
 
         {/* Image Preview */}
         <div className="w-full flex flex-col items-center mb-8">
-          <div className="relative w-72 h-72 bg-[var(--app-gray-dark)] rounded-3xl flex items-center justify-center overflow-hidden border border-[var(--app-card-border)] shadow-inner">
+          <div
+            id="meme-image-container"
+            className={`relative w-[36rem] h-[36rem] bg-black rounded-3xl flex items-center justify-center overflow-hidden border border-[var(--app-card-border)] shadow-inner select-none ${tab === "upload" ? "cursor-pointer hover:opacity-90" : ""}`}
+            onClick={() => {
+              if (tab === "upload") fileInputRef.current?.click();
+            }}
+          >
             {image ? (
               <>
                 {/* Meme image with caption overlay */}
-                <img src={image} alt="Meme preview" className="object-contain w-full h-full" />
+                <img src={image} alt="Meme preview" className="object-contain w-full h-full" draggable={false} />
                 {caption && (
-                  <span className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-[var(--app-accent)]/80 text-white text-xl font-extrabold rounded-full shadow text-center w-11/12 break-words" style={{textShadow: "2px 2px 0 #237a5e"}}>
+                  <span
+                    style={{
+                      position: "absolute",
+                      left: `${captionPos.x}%`,
+                      top: `${captionPos.y}%`,
+                      transform: "translate(-50%, -50%)",
+                      width: "90%",
+                      fontFamily: captionFont,
+                      fontSize: `${captionFontSize}px`,
+                      textShadow: "2px 2px 0 #000, -2px 2px 0 #000, 2px -2px 0 #000, -2px -2px 0 #000, 0 2px 0 #000, 2px 0 0 #000, 0 -2px 0 #000, -2px 0 0 #000",
+                      color: "#fff",
+                      padding: "0.1em 0.2em",
+                      cursor: image ? "grab" : "default",
+                      userSelect: "none",
+                      zIndex: 10,
+                      whiteSpace: "pre-line",
+                      textAlign: "center",
+                    }}
+                    onMouseDown={handleCaptionMouseDown}
+                  >
                     {caption}
                   </span>
                 )}
               </>
             ) : (
-              <span className="text-[var(--app-foreground-muted)]">No image selected</span>
+              tab === "upload" ? (
+                <span className="text-[var(--app-accent)] text-lg font-semibold text-center px-4">Click here to upload an image</span>
+              ) : (
+                <span className="text-[var(--app-foreground-muted)] text-lg font-semibold text-center px-4">No image generated yet</span>
+              )
             )}
           </div>
         </div>
@@ -174,13 +244,73 @@ export default function MemeHome() {
               ref={fileInputRef}
               onChange={handleImageUpload}
             />
-            <button
-              className="bg-[var(--app-accent)] text-white px-8 py-3 rounded-full font-semibold shadow-lg hover:bg-[var(--app-accent-hover)] transition text-lg"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              Upload Image
-            </button>
             <span className="text-xs text-[var(--app-foreground-muted)]">PNG, JPG, GIF supported</span>
+            {/* Caption input, AI Caption button, and font/size controls for uploaded images */}
+            <div className="w-full flex gap-4 mb-8 mt-4">
+              <input
+                type="text"
+                placeholder="Add a caption or let AI help..."
+                className="flex-1 px-5 py-3 rounded-full border border-[var(--app-card-border)] focus:outline-none focus:ring-2 focus:ring-[var(--app-accent)] text-lg text-black"
+                value={caption}
+                onChange={e => setCaption(e.target.value)}
+                disabled={captionLoading}
+              />
+              <button
+                className="bg-[var(--app-accent)] text-white px-6 py-3 rounded-full font-semibold shadow-lg hover:bg-[var(--app-accent-hover)] transition text-lg"
+                onClick={handleGenerateCaption}
+                disabled={captionLoading || !image}
+              >
+                {captionLoading ? "..." : "AI Caption"}
+              </button>
+            </div>
+            <div className="w-full flex flex-row gap-4 mb-4 items-center">
+              <div className="flex-1">
+                <label className="block text-xs font-semibold mb-1 text-[var(--app-foreground-muted)]">Font</label>
+                <select
+                  className="w-full px-3 py-2 rounded-full border border-[var(--app-card-border)] focus:outline-none focus:ring-2 focus:ring-[var(--app-accent)] text-base text-black"
+                  value={captionFont}
+                  onChange={e => setCaptionFont(e.target.value)}
+                >
+                  <option value="Impact, Arial, sans-serif">Impact</option>
+                  <option value="Arial, Helvetica, sans-serif">Arial</option>
+                  <option value="Comic Sans MS, Comic Sans, cursive">Comic Sans</option>
+                  <option value="Montserrat, Arial, sans-serif">Montserrat</option>
+                  <option value="Times New Roman, Times, serif">Times New Roman</option>
+                  <option value="Courier New, Courier, monospace">Courier New</option>
+                  <option value="Georgia, serif">Georgia</option>
+                  <option value="Verdana, Geneva, sans-serif">Verdana</option>
+                  <option value="Trebuchet MS, sans-serif">Trebuchet MS</option>
+                  <option value="Tahoma, Geneva, sans-serif">Tahoma</option>
+                  <option value="Lucida Console, Monaco, monospace">Lucida Console</option>
+                  <option value="Garamond, serif">Garamond</option>
+                  <option value="Palatino Linotype, Book Antiqua, Palatino, serif">Palatino</option>
+                  <option value="Brush Script MT, cursive">Brush Script</option>
+                  <option value="Futura, Arial, sans-serif">Futura</option>
+                  <option value="Franklin Gothic Medium, Arial Narrow, Arial, sans-serif">Franklin Gothic</option>
+                  <option value="Copperplate, Papyrus, fantasy">Copperplate</option>
+                  <option value="Gill Sans, Gill Sans MT, Calibri, sans-serif">Gill Sans</option>
+                  <option value="Rockwell, Courier Bold, Courier, Georgia, Times, Times New Roman, serif">Rockwell</option>
+                  <option value="Baskerville, Baskerville Old Face, Hoefler Text, Garamond, Times New Roman, serif">Baskerville</option>
+                  <option value="Century Gothic, CenturyGothic, AppleGothic, sans-serif">Century Gothic</option>
+                  <option value="Candara, Calibri, Segoe, Segoe UI, Optima, Arial, sans-serif">Candara</option>
+                  <option value="Optima, Segoe, Segoe UI, Candara, Calibri, Arial, sans-serif">Optima</option>
+                  <option value="Didot, Didot LT STD, Hoefler Text, Garamond, Times New Roman, serif">Didot</option>
+                  <option value="Geneva, Tahoma, Verdana, sans-serif">Geneva</option>
+                </select>
+              </div>
+              <div className="flex-1">
+                <label className="block text-xs font-semibold mb-1 text-[var(--app-foreground-muted)]">Text Size</label>
+                <input
+                  type="range"
+                  min={16}
+                  max={64}
+                  value={captionFontSize}
+                  onChange={e => setCaptionFontSize(Number(e.target.value))}
+                  className="w-full"
+                />
+                <div className="text-xs text-[var(--app-foreground-muted)] text-center mt-1">{captionFontSize}px</div>
+              </div>
+            </div>
           </div>
         ) : (
           <div className="w-full flex flex-col items-center mb-8 gap-3">
@@ -246,41 +376,86 @@ export default function MemeHome() {
               </div>
               <div className="mt-4">
                 <div className="text-xs text-[var(--app-foreground-muted)] mb-1">Prompt Preview:</div>
-                <div className="bg-[var(--app-gray)] rounded-xl px-4 py-2 text-sm text-[var(--app-foreground)] font-mono break-words border border-[var(--app-card-border)]">
+                <div className="bg-[var(--app-gray)] rounded-xl px-4 py-2 text-sm text-[var(--app-foreground)] font-mono break-words border border-[var(--app-card-border)] mb-4">
                   {advancedPrompt}
                 </div>
+                <button
+                  className="bg-[var(--app-accent)] text-white px-8 py-3 rounded-full font-semibold shadow-lg hover:bg-[var(--app-accent-hover)] transition text-lg w-full mb-2"
+                  onClick={handleGenerateImage}
+                  disabled={aiLoading || !memeSubject}
+                >
+                  {aiLoading ? "Generating..." : "Generate Image"}
+                </button>
               </div>
             </div>
-            <button
-              className="bg-[var(--app-accent)] text-white px-8 py-3 rounded-full font-semibold shadow-lg hover:bg-[var(--app-accent-hover)] transition text-lg"
-              onClick={handleGenerateImage}
-              disabled={aiLoading || !memeSubject}
-            >
-              {aiLoading ? "Generating..." : "Generate Image"}
-            </button>
+            <div className="w-full flex gap-4 mb-8">
+              <input
+                type="text"
+                placeholder="Add a caption or let AI help..."
+                className="flex-1 px-5 py-3 rounded-full border border-[var(--app-card-border)] focus:outline-none focus:ring-2 focus:ring-[var(--app-accent)] text-lg text-black"
+                value={caption}
+                onChange={e => setCaption(e.target.value)}
+                disabled={captionLoading}
+              />
+              <button
+                className="bg-[var(--app-accent)] text-white px-6 py-3 rounded-full font-semibold shadow-lg hover:bg-[var(--app-accent-hover)] transition text-lg"
+                onClick={handleGenerateCaption}
+                disabled={captionLoading || !image}
+              >
+                {captionLoading ? "..." : "AI Caption"}
+              </button>
+            </div>
+            {/* Caption font and size controls (moved here) */}
+            <div className="w-full flex flex-row gap-4 mb-4 items-center">
+              <div className="flex-1">
+                <label className="block text-xs font-semibold mb-1 text-[var(--app-foreground-muted)]">Font</label>
+                <select
+                  className="w-full px-3 py-2 rounded-full border border-[var(--app-card-border)] focus:outline-none focus:ring-2 focus:ring-[var(--app-accent)] text-base text-black"
+                  value={captionFont}
+                  onChange={e => setCaptionFont(e.target.value)}
+                >
+                  <option value="Impact, Arial, sans-serif">Impact</option>
+                  <option value="Arial, Helvetica, sans-serif">Arial</option>
+                  <option value="Comic Sans MS, Comic Sans, cursive">Comic Sans</option>
+                  <option value="Montserrat, Arial, sans-serif">Montserrat</option>
+                  <option value="Times New Roman, Times, serif">Times New Roman</option>
+                  <option value="Courier New, Courier, monospace">Courier New</option>
+                  <option value="Georgia, serif">Georgia</option>
+                  <option value="Verdana, Geneva, sans-serif">Verdana</option>
+                  <option value="Trebuchet MS, sans-serif">Trebuchet MS</option>
+                  <option value="Tahoma, Geneva, sans-serif">Tahoma</option>
+                  <option value="Lucida Console, Monaco, monospace">Lucida Console</option>
+                  <option value="Garamond, serif">Garamond</option>
+                  <option value="Palatino Linotype, Book Antiqua, Palatino, serif">Palatino</option>
+                  <option value="Brush Script MT, cursive">Brush Script</option>
+                  <option value="Futura, Arial, sans-serif">Futura</option>
+                  <option value="Franklin Gothic Medium, Arial Narrow, Arial, sans-serif">Franklin Gothic</option>
+                  <option value="Copperplate, Papyrus, fantasy">Copperplate</option>
+                  <option value="Gill Sans, Gill Sans MT, Calibri, sans-serif">Gill Sans</option>
+                  <option value="Rockwell, Courier Bold, Courier, Georgia, Times, Times New Roman, serif">Rockwell</option>
+                  <option value="Baskerville, Baskerville Old Face, Hoefler Text, Garamond, Times New Roman, serif">Baskerville</option>
+                  <option value="Century Gothic, CenturyGothic, AppleGothic, sans-serif">Century Gothic</option>
+                  <option value="Candara, Calibri, Segoe, Segoe UI, Optima, Arial, sans-serif">Candara</option>
+                  <option value="Optima, Segoe, Segoe UI, Candara, Calibri, Arial, sans-serif">Optima</option>
+                  <option value="Didot, Didot LT STD, Hoefler Text, Garamond, Times New Roman, serif">Didot</option>
+                  <option value="Geneva, Tahoma, Verdana, sans-serif">Geneva</option>
+                </select>
+              </div>
+              <div className="flex-1">
+                <label className="block text-xs font-semibold mb-1 text-[var(--app-foreground-muted)]">Text Size</label>
+                <input
+                  type="range"
+                  min={16}
+                  max={64}
+                  value={captionFontSize}
+                  onChange={e => setCaptionFontSize(Number(e.target.value))}
+                  className="w-full"
+                />
+                <div className="text-xs text-[var(--app-foreground-muted)] text-center mt-1">{captionFontSize}px</div>
+              </div>
+            </div>
           </div>
         )}
-
-        {/* Caption Section */}
-        <div className="w-full flex flex-col items-center mb-8">
-          <div className="flex w-full gap-4">
-            <input
-              type="text"
-              placeholder="Add a caption or let AI help..."
-              className="flex-1 px-5 py-3 rounded-full border border-[var(--app-card-border)] focus:outline-none focus:ring-2 focus:ring-[var(--app-accent)] text-lg text-black"
-              value={caption}
-              onChange={e => setCaption(e.target.value)}
-              disabled={captionLoading}
-            />
-            <button
-              className="bg-[var(--app-accent)] text-white px-6 py-3 rounded-full font-semibold shadow-lg hover:bg-[var(--app-accent-hover)] transition text-lg"
-              onClick={handleGenerateCaption}
-              disabled={captionLoading || !image}
-            >
-              {captionLoading ? "..." : "AI Caption"}
-            </button>
-          </div>
-        </div>
 
         {/* Mint & Share Buttons */}
         <div className="w-full flex gap-6 mb-2 mt-2">
