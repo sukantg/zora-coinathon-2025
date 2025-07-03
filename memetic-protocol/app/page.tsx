@@ -197,6 +197,18 @@ export default function MemeHome() {
           >
             {image ? (
               <>
+                {/* Remove image button */}
+                <button
+                  type="button"
+                  aria-label="Remove image"
+                  className="absolute top-3 right-3 z-20 bg-black/60 hover:bg-black/80 text-white rounded-full w-9 h-9 flex items-center justify-center text-2xl font-bold shadow-lg focus:outline-none"
+                  onClick={e => {
+                    e.stopPropagation();
+                    setImage(null);
+                  }}
+                >
+                  ×
+                </button>
                 {/* Meme image with caption overlay */}
                 <img src={image} alt="Meme preview" className="object-contain w-full h-full" draggable={false} />
                 {caption && (
@@ -226,7 +238,10 @@ export default function MemeHome() {
               </>
             ) : (
               tab === "upload" ? (
-                <span className="text-[var(--app-accent)] text-lg font-semibold text-center px-4">Click here to upload an image</span>
+                <span className="flex flex-col items-center text-center px-4">
+                  <span className="text-[var(--app-foreground-muted)] text-lg font-semibold">Click here to upload an image</span>
+                  <span className="text-xs text-[var(--app-foreground-muted)] mt-1">PNG, JPG, GIF supported</span>
+                </span>
               ) : (
                 <span className="text-[var(--app-foreground-muted)] text-lg font-semibold text-center px-4">No image generated yet</span>
               )
@@ -244,7 +259,6 @@ export default function MemeHome() {
               ref={fileInputRef}
               onChange={handleImageUpload}
             />
-            <span className="text-xs text-[var(--app-foreground-muted)]">PNG, JPG, GIF supported</span>
             {/* Caption input, AI Caption button, and font/size controls for uploaded images */}
             <div className="w-full flex gap-4 mb-8 mt-4">
               <input
