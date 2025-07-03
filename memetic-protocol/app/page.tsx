@@ -7,7 +7,6 @@ export default function MemeHome() {
   const [image, setImage] = useState<string | null>(null);
   const [caption, setCaption] = useState("");
   const [captionLoading, setCaptionLoading] = useState(false);
-  const [aiPrompt, setAiPrompt] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
