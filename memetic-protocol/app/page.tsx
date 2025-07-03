@@ -1,6 +1,13 @@
 "use client";
 
 import React, { useState, useRef } from "react";
+import { setApiKey, createMetadataBuilder, createZoraUploaderForCreator, createCoin, DeployCurrency } from "@zoralabs/coins-sdk";
+import { createWalletClient, createPublicClient, http } from "viem";
+import { base } from "viem/chains";
+import html2canvas from "html2canvas";
+
+// Set your Zora API key from .env.local
+setApiKey(process.env.ZORA_API_KEY);
 
 export default function MemeHome() {
   const [tab, setTab] = useState<"upload" | "generate">("generate");
@@ -141,6 +148,31 @@ export default function MemeHome() {
       };
     }
   });
+
+  // Add these states to your main component:
+  const [showCoinForm, setShowCoinForm] = useState(false);
+  const [coinName, setCoinName] = useState("");
+  const [coinSymbol, setCoinSymbol] = useState("");
+  const [mintStatus, setMintStatus] = useState("");
+  const [txHash, setTxHash] = useState("");
+  const [coinAddress, setCoinAddress] = useState("");
+
+  // TODO: Provide userAddress (wallet address) and rpcUrl (Base RPC endpoint) from your wallet connection logic
+  const userAddress = undefined; // e.g., from wagmi or OnchainKit
+  const rpcUrl = undefined; // e.g., from env or config
+
+  // Function to export meme as PNG File
+  async function exportMemeAsFile() {
+    const memeNode = document.getElementById("meme-image-container");
+    if (!memeNode) throw new Error("Meme image container not found");
+    const canvas = await html2canvas(memeNode, { backgroundColor: null });
+    return new Promise((resolve, reject) => {
+      canvas.toBlob(blob => {
+        if (!blob) return reject(new Error("Failed to export meme as image"));
+        resolve(new File([blob], "meme.png", { type: "image/png" }));
+      }, "image/png");
+    });
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[var(--app-background)] to-[var(--app-gray)] flex flex-col items-center py-8 px-2">
@@ -472,16 +504,16 @@ export default function MemeHome() {
         )}
 
         {/* Mint & Share Buttons */}
-        <div className="w-full flex gap-6 mb-2 mt-2">
+        <div className="w-full flex gap-8 mt-6 mb-2">
           <button
-            className="flex-1 bg-gradient-to-r from-green-400 to-[var(--app-accent)] text-white px-6 py-3 rounded-full font-bold shadow-lg hover:from-green-500 hover:to-[var(--app-accent-hover)] transition text-lg"
-            onClick={handleMint}
+            className="flex-1 bg-gradient-to-r from-green-400 to-green-500 text-white text-2xl font-bold rounded-full py-5 shadow-lg hover:from-green-500 hover:to-green-600 transition"
+            onClick={() => setShowCoinForm(true)}
             disabled={!image || !caption}
           >
             Mint Meme
           </button>
           <button
-            className="flex-1 bg-gradient-to-r from-[var(--app-accent)] to-green-400 text-white px-6 py-3 rounded-full font-bold shadow-lg hover:to-green-500 hover:from-[var(--app-accent-hover)] transition text-lg"
+            className="flex-1 bg-gradient-to-r from-green-400 to-green-500 text-white text-2xl font-bold rounded-full py-5 shadow-lg hover:from-green-500 hover:to-green-600 transition"
             onClick={handleCast}
             disabled={!image || !caption}
           >
@@ -492,6 +524,79 @@ export default function MemeHome() {
         {/* Status/Feedback */}
         {status && (
           <div className="w-full text-center text-base text-[var(--app-accent)] mt-3 animate-fade-in">{status}</div>
+        )}
+
+        {showCoinForm && (
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full">
+              <h2 className="text-xl font-bold mb-2">Mint Meme Coin</h2>
+              <input
+                className="mb-2 p-2 border rounded w-full"
+                placeholder="Coin Name"
+                value={coinName}
+                onChange={e => setCoinName(e.target.value)}
+              />
+              <input
+                className="mb-2 p-2 border rounded w-full"
+                placeholder="Coin Symbol"
+                value={coinSymbol}
+                onChange={e => setCoinSymbol(e.target.value)}
+              />
+              <button
+                className="bg-green-600 text-white px-4 py-2 rounded font-bold"
+                onClick={async () => {
+                  setMintStatus("Exporting meme...");
+                  const memeFile = await exportMemeAsFile();
+                  setMintStatus("Uploading to IPFS...");
+                  try {
+                    const { createMetadataParameters } = await createMetadataBuilder()
+                      .withName(coinName)
+                      .withSymbol(coinSymbol)
+                      .withDescription("A meme coin created with Memetic Protocol")
+                      .withImage(memeFile)
+                      .upload(createZoraUploaderForCreator(userAddress));
+                    setMintStatus("Minting coin on Zora...");
+                    const publicClient = createPublicClient({
+                      chain: base,
+                      transport: http(rpcUrl),
+                    });
+                    const walletClient = createWalletClient({
+                      account: userAddress,
+                      chain: base,
+                      transport: http(rpcUrl),
+                    });
+                    const coinParams = {
+                      ...createMetadataParameters,
+                      payoutRecipient: userAddress,
+                      currency: DeployCurrency.ZORA,
+                    };
+                    const result = await createCoin(coinParams, walletClient, publicClient);
+                    setTxHash(result.hash);
+                    setCoinAddress(result.address);
+                    setMintStatus("Coin minted successfully!");
+                  } catch (err) {
+                    setMintStatus("Error: " + (err && typeof err === "object" && "message" in err ? err.message : String(err)));
+                  }
+                }}
+                disabled={!coinName || !coinSymbol}
+              >
+                Mint
+              </button>
+              <button
+                className="ml-2 text-gray-500 underline"
+                onClick={() => setShowCoinForm(false)}
+              >
+                Cancel
+              </button>
+              {mintStatus && <div className="mt-2">{mintStatus}</div>}
+              {txHash && (
+                <div className="mt-2">
+                  <div>Tx Hash: <a href={`https://basescan.org/tx/${txHash}`} target="_blank" rel="noopener noreferrer">{txHash}</a></div>
+                  <div>Coin Address: {coinAddress}</div>
+                </div>
+              )}
+            </div>
+          </div>
         )}
       </div>
 
