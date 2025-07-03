@@ -43,6 +43,7 @@ export default function MemeHome() {
         setStatus("Failed to generate image. Try again.");
       }
     } catch (err) {
+      console.error(err);
       setStatus("Network error generating image. Try again.");
     }
     setAiLoading(false);
