@@ -1,4 +1,4 @@
-# �� Memetic Protocol
+# Memetic Protocol
 
 "Turn any meme into a monetizable asset. One cast. One click. One coin."
 
@@ -8,19 +8,19 @@ It's a creative monetization engine where memes become micro-economies, enabling
 
 ---
 
-## 🌟 Vision
+## Vision
 
 Memetic Protocol envisions a world where internet culture is not just viral, but valuable. We believe memes are the native language of the internet, and their creators deserve to capture the value they generate. By turning memes into onchain assets, we unlock new economic opportunities for creators, fans, and communities.
 
 ---
 
-## 💡 Inspiration
+## Inspiration
 
 The project is inspired by the explosive growth of meme culture and the lack of direct monetization for creators. While memes drive engagement and shape narratives, their creators rarely benefit financially. Memetic Protocol bridges this gap by combining the viral nature of memes with the programmability of crypto assets.
 
 ---
 
-## 🌍 Potential Impact
+## Potential Impact
 
 - **Empower Creators:** Anyone can monetize their creativity instantly, without needing sponsors or platforms.
 - **Democratize Value:** Fans and communities can invest in and support the memes they love, creating new micro-economies.
@@ -29,7 +29,7 @@ The project is inspired by the explosive growth of meme culture and the lack of 
 
 ---
 
-## 🚀 What It Does
+## What It Does
 
 Memetic Protocol turns memes into Zora Coins directly within Farcaster. The flow is:
 
@@ -44,7 +44,7 @@ Memetic Protocol turns memes into Zora Coins directly within Farcaster. The flow
 
 ---
 
-## 🎯 Why It Matters
+## Why It Matters
 
 Most memes today go viral and die broke. Memetic Protocol brings economic life to viral content by:
 
@@ -69,18 +69,18 @@ Most memes today go viral and die broke. Memetic Protocol brings economic life t
 
 ---
 
-## 🖼 Features
+## Features
 
-- 📸 **Meme Generator:** Upload an image or use AI to create one
-- 🧠 **GPT-4 Captioner:** Auto-generate meme text based on your prompt or image
-- 🪙 **Zora Coin Minting:** Every meme is minted into a custom token with metadata
-- 📢 **Farcaster Cast Composer:** Automatically casts meme + minting CTA
-- 💸 **One-click Minting:** Fans can mint directly from the Farcaster Frame
-- 🌐 **Public Gallery (WIP):** All minted memes browsable in a memecoin explorer
+-  **Meme Generator:** Upload an image or use AI to create one
+-  **GPT-4 Captioner:** Auto-generate meme text based on your prompt or image
+-  **Zora Coin Minting:** Every meme is minted into a custom token with metadata
+-  **Farcaster Cast Composer:** Automatically casts meme + minting CTA
+-  **One-click Minting:** Fans can mint directly from the Farcaster Frame
+-  **Public Gallery (WIP):** All minted memes browsable in a memecoin explorer
 
 ---
 
-## 🧪 How It Works (Technical Flow)
+## How It Works (Technical Flow)
 
 ```mermaid
 graph TD
@@ -93,7 +93,7 @@ graph TD
 
 ---
 
-## 🧬 Use Cases
+## Use Cases
 
 - Creators monetize memes without needing platforms or sponsorships.
 - Fans can invest in the early virality of a meme by holding its coin.
@@ -102,18 +102,7 @@ graph TD
 
 ---
 
-## ✅ Judging Criteria Alignment
-
-| Category      | Fit                                                                 |
-|--------------|---------------------------------------------------------------------|
-| Originality   | Meme-to-coin is a novel, culture-native monetization mechanic      |
-| Utility       | Enables everyday users to mint, monetize, and participate in meme economies |
-| Zora Integration | Deep use of Zora CoinV4 SDK for minting, metadata, and monetization |
-| Polish        | Farcaster-native Mini App, OpenAI-generated content, clean UX, frame integration |
-
----
-
-## 📦 What's Next
+## What's Next
 
 - **Uniswap v4 Liquidity Hook** — auto-provision trading pools for high-volume memes
 - **Remix Tree Tracking** — lineage of meme forks and remix coins
@@ -121,20 +110,5 @@ graph TD
 - **Meme Leaderboard** — daily trending memecoins
 
 ---
-
-## 👨‍🚀 Team
-
-- [Your Name] – Full Stack & Smart Contracts
-- [Optional] – AI Integration / UX
-- [Optional] – Farcaster SDK / Growth
-
----
-
-Let me know if you want:
-
-- A one-paragraph pitch version
-- A slide deck description
-- GitHub README.md starter file
-- Submission form boilerplate
 
 Would you like me to scaffold the code repo next? 
