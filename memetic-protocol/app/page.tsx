@@ -1,6 +1,35 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
+import html2canvas from "html2canvas";
+import {
+  createMetadataBuilder,
+  createZoraUploaderForCreator,
+  createCoin,
+  DeployCurrency
+} from "@zoralabs/coins-sdk";
+import { createWalletClient, createPublicClient, http } from "viem";
+import { base } from "viem/chains";
+import { useAccount, useConnect, useDisconnect, useWalletClient, usePublicClient } from 'wagmi';
+import { baseSepolia } from "viem/chains";
+
+// TODO: Replace with actual wallet integration
+const userAddress = undefined; // e.g., from wallet connection
+// Use Base Sepolia testnet RPC URL for development
+const rpcUrl = "https://base-sepolia.g.alchemy.com/v2/uvWbkrHIGvftJv0-OWuNkj7rBMIJzyEl";
+
+// Helper to export meme as PNG file
+async function exportMemeAsFile() {
+  const memeNode = document.getElementById("meme-image-container");
+  if (!memeNode) throw new Error("Meme image container not found");
+  const canvas = await html2canvas(memeNode, { backgroundColor: null });
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(blob => {
+      if (!blob) return reject(new Error("Failed to export meme as image"));
+      resolve(new File([blob], "meme.png", { type: "image/png" }));
+    }, "image/png");
+  });
+}
 
 export default function MemeHome() {
   const [tab, setTab] = useState<"upload" | "generate">("generate");
@@ -142,6 +171,20 @@ export default function MemeHome() {
     }
   });
 
+  // Add at the top:
+  const [showCoinForm, setShowCoinForm] = useState(false);
+  const [coinName, setCoinName] = useState("");
+  const [coinSymbol, setCoinSymbol] = useState("");
+  const [mintStatus, setMintStatus] = useState("");
+  const [txHash, setTxHash] = useState("");
+  const [coinAddress, setCoinAddress] = useState("");
+
+  const { address, isConnected } = useAccount();
+  const { connect, connectors, isPending } = useConnect();
+  const { disconnect } = useDisconnect();
+  const { data: walletClient } = useWalletClient();
+  const publicClient = usePublicClient({ chainId: baseSepolia.id });
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[var(--app-background)] to-[var(--app-gray)] flex flex-col items-center py-8 px-2">
       {/* App Title */}
@@ -277,9 +320,9 @@ export default function MemeHome() {
                 {captionLoading ? "..." : "AI Caption"}
               </button>
             </div>
-            <div className="w-full flex flex-row gap-4 mb-4 items-center">
-              <div className="flex-1">
-                <label className="block text-xs font-semibold mb-1 text-[var(--app-foreground-muted)]">Font</label>
+            <div className="w-full flex flex-row gap-10 mb-6 items-center relative">
+              <div className="flex-1 flex flex-col items-center">
+                <label className="block text-xs font-semibold mb-2 text-[var(--app-foreground-muted)] text-center">Font</label>
                 <select
                   className="w-full px-3 py-2 rounded-full border border-[var(--app-card-border)] focus:outline-none focus:ring-2 focus:ring-[var(--app-accent)] text-base text-black"
                   value={captionFont}
@@ -312,8 +355,10 @@ export default function MemeHome() {
                   <option value="Geneva, Tahoma, Verdana, sans-serif">Geneva</option>
                 </select>
               </div>
-              <div className="flex-1">
-                <label className="block text-xs font-semibold mb-1 text-[var(--app-foreground-muted)]">Text Size</label>
+              {/* Divider for large screens */}
+              <div className="hidden md:block h-12 w-px bg-[var(--app-card-border)] mx-2"></div>
+              <div className="flex-1 flex flex-col items-center">
+                <label className="block text-xs font-semibold mb-2 text-[var(--app-foreground-muted)] text-center">Text Size</label>
                 <input
                   type="range"
                   min={16}
@@ -322,7 +367,7 @@ export default function MemeHome() {
                   onChange={e => setCaptionFontSize(Number(e.target.value))}
                   className="w-full"
                 />
-                <div className="text-xs text-[var(--app-foreground-muted)] text-center mt-1">{captionFontSize}px</div>
+                <div className="text-xs text-[var(--app-foreground-muted)] text-center mt-2">{captionFontSize}px</div>
               </div>
             </div>
           </div>
@@ -420,9 +465,9 @@ export default function MemeHome() {
               </button>
             </div>
             {/* Caption font and size controls (moved here) */}
-            <div className="w-full flex flex-row gap-4 mb-4 items-center">
-              <div className="flex-1">
-                <label className="block text-xs font-semibold mb-1 text-[var(--app-foreground-muted)]">Font</label>
+            <div className="w-full flex flex-row gap-10 mb-6 items-center relative">
+              <div className="flex-1 flex flex-col items-center">
+                <label className="block text-xs font-semibold mb-2 text-[var(--app-foreground-muted)] text-center">Font</label>
                 <select
                   className="w-full px-3 py-2 rounded-full border border-[var(--app-card-border)] focus:outline-none focus:ring-2 focus:ring-[var(--app-accent)] text-base text-black"
                   value={captionFont}
@@ -455,8 +500,10 @@ export default function MemeHome() {
                   <option value="Geneva, Tahoma, Verdana, sans-serif">Geneva</option>
                 </select>
               </div>
-              <div className="flex-1">
-                <label className="block text-xs font-semibold mb-1 text-[var(--app-foreground-muted)]">Text Size</label>
+              {/* Divider for large screens */}
+              <div className="hidden md:block h-12 w-px bg-[var(--app-card-border)] mx-2"></div>
+              <div className="flex-1 flex flex-col items-center">
+                <label className="block text-xs font-semibold mb-2 text-[var(--app-foreground-muted)] text-center">Text Size</label>
                 <input
                   type="range"
                   min={16}
@@ -465,7 +512,7 @@ export default function MemeHome() {
                   onChange={e => setCaptionFontSize(Number(e.target.value))}
                   className="w-full"
                 />
-                <div className="text-xs text-[var(--app-foreground-muted)] text-center mt-1">{captionFontSize}px</div>
+                <div className="text-xs text-[var(--app-foreground-muted)] text-center mt-2">{captionFontSize}px</div>
               </div>
             </div>
           </div>
@@ -475,7 +522,7 @@ export default function MemeHome() {
         <div className="w-full flex gap-6 mb-2 mt-2">
           <button
             className="flex-1 bg-gradient-to-r from-green-400 to-[var(--app-accent)] text-white px-6 py-3 rounded-full font-bold shadow-lg hover:from-green-500 hover:to-[var(--app-accent-hover)] transition text-lg"
-            onClick={handleMint}
+            onClick={() => setShowCoinForm(true)}
             disabled={!image || !caption}
           >
             Mint Meme
@@ -492,6 +539,153 @@ export default function MemeHome() {
         {/* Status/Feedback */}
         {status && (
           <div className="w-full text-center text-base text-[var(--app-accent)] mt-3 animate-fade-in">{status}</div>
+        )}
+
+        {showCoinForm && (
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full relative text-black">
+              <button
+                className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-2xl font-bold"
+                onClick={() => setShowCoinForm(false)}
+                disabled={mintStatus === "Minting..."}
+                aria-label="Close"
+              >
+                ×
+              </button>
+              <h2 className="text-xl font-bold mb-2">Mint Meme Coin</h2>
+              {/* Meme Preview */}
+              <div className="mb-4 flex flex-col items-center">
+                {image && (
+                  <div className="relative w-48 h-48 mb-2 border rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
+                    <img src={image} alt="Meme preview" className="object-contain w-full h-full" />
+                    {caption && (
+                      <span
+                        style={{
+                          position: "absolute",
+                          left: `${captionPos.x}%`,
+                          top: `${captionPos.y}%`,
+                          transform: "translate(-50%, -50%)",
+                          width: "90%",
+                          fontFamily: captionFont,
+                          fontSize: `${captionFontSize}px`,
+                          textShadow: "2px 2px 0 #000, -2px 2px 0 #000, 2px -2px 0 #000, -2px -2px 0 #000, 0 2px 0 #000, 2px 0 0 #000, 0 -2px 0 #000, -2px 0 0 #000",
+                          color: "#fff",
+                          padding: "0.1em 0.2em",
+                          userSelect: "none",
+                          zIndex: 10,
+                          whiteSpace: "pre-line",
+                          textAlign: "center",
+                          pointerEvents: "none",
+                        }}
+                      >
+                        {caption}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+              <input
+                className="mb-2 px-5 py-3 rounded-full border border-[var(--app-card-border)] focus:outline-none focus:ring-2 focus:ring-[var(--app-accent)] text-lg text-black w-full"
+                placeholder="Coin Name"
+                value={coinName}
+                onChange={e => setCoinName(e.target.value)}
+                disabled={mintStatus === "Minting..."}
+              />
+              <input
+                className="mb-2 px-5 py-3 rounded-full border border-[var(--app-card-border)] focus:outline-none focus:ring-2 focus:ring-[var(--app-accent)] text-lg text-black w-full"
+                placeholder="Coin Symbol"
+                value={coinSymbol}
+                onChange={e => setCoinSymbol(e.target.value)}
+                disabled={mintStatus === "Minting..."}
+              />
+              {!isConnected ? (
+                <button
+                  className="w-full bg-gradient-to-r from-green-400 to-[var(--app-accent)] text-white px-6 py-3 rounded-full font-bold shadow-lg hover:from-green-500 hover:to-[var(--app-accent-hover)] transition text-lg mb-4"
+                  onClick={() => connect({ connector: connectors[0] })}
+                  disabled={isPending}
+                >
+                  {isPending ? 'Connecting...' : 'Connect Wallet'}
+                </button>
+              ) : (
+                <div className="mb-2 text-sm text-black">Connected: <span className="font-mono">{address}</span> <button className="ml-2 underline text-[var(--app-accent)]" onClick={() => disconnect()}>Disconnect</button></div>
+              )}
+              <button
+                className="w-full bg-gradient-to-r from-green-400 to-[var(--app-accent)] text-white px-6 py-3 rounded-full font-bold shadow-lg hover:from-green-500 hover:to-[var(--app-accent-hover)] transition text-lg disabled:opacity-60"
+                onClick={async () => {
+                  if (!isConnected || !address) {
+                    setMintStatus('Please connect your wallet.');
+                    return;
+                  }
+                  if (!publicClient) {
+                    setMintStatus('Public client not available.');
+                    return;
+                  }
+                  if (!walletClient) {
+                    setMintStatus('Wallet client not available.');
+                    return;
+                  }
+                  setMintStatus("Uploading meme and metadata...");
+                  try {
+                    const memeNode = document.getElementById("meme-image-container");
+                    if (!memeNode) throw new Error("Meme image container not found");
+                    const canvas = await html2canvas(memeNode, { backgroundColor: null });
+                    const memeImage = canvas.toDataURL("image/png"); // base64 string
+                    // 1. Upload metadata and get parameters
+                    const res = await fetch("/api/upload-metadata", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        coinName,
+                        coinSymbol,
+                        memeImage,
+                        userAddress: address,
+                      }),
+                    });
+                    const { createMetadataParameters, error } = await res.json();
+                    if (!res.ok || error) {
+                      setMintStatus("Error: " + (error || "Failed to upload metadata"));
+                      return;
+                    }
+                    // 2. Mint using wallet
+                    setMintStatus("Minting coin on Zora...");
+                    const coinParams = {
+                      ...createMetadataParameters,
+                      payoutRecipient: address,
+                      currency: "0x0000000000000000000000000000000000000000", // or DeployCurrency.ZORA
+                    };
+                    const result = await createCoin(coinParams, walletClient!, publicClient!);
+                    setTxHash(result.hash ?? '');
+                    setCoinAddress(result.address ?? '');
+                    setMintStatus("Coin minted successfully!");
+                  } catch (err) {
+                    setMintStatus("Error: " + (err && typeof err === "object" && "message" in err ? err.message : String(err)));
+                  }
+                }}
+                disabled={!coinName || !coinSymbol || mintStatus === "Minting..." || !isConnected}
+              >
+                {mintStatus === "Minting..." ? "Minting..." : "Mint"}
+              </button>
+              <button
+                className="ml-2 text-[var(--app-accent)] underline mt-2 font-semibold hover:text-[var(--app-accent-hover)] transition"
+                onClick={() => setShowCoinForm(false)}
+                disabled={mintStatus === "Minting..."}
+              >
+                Cancel
+              </button>
+              {/* Minting Status & Results */}
+              {mintStatus && <div className="mt-2 text-center text-sm text-black">{mintStatus}</div>}
+              {txHash && (
+                <div className="mt-2 text-center text-black">
+                  <div>Tx Hash: <a href={`https://basescan.org/tx/${txHash}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">{txHash.slice(0, 10)}...</a></div>
+                  <div>Coin Address: <span className="font-mono">{coinAddress}</span></div>
+                  <div className="mt-2 flex flex-col gap-2">
+                    <a href={`https://zora.co/collect/base:${coinAddress}`} target="_blank" rel="noopener noreferrer" className="bg-[var(--app-accent)] text-white px-4 py-2 rounded-full font-semibold shadow hover:bg-[var(--app-accent-hover)] transition">View on Zora</a>
+                    <button className="bg-gray-200 px-4 py-2 rounded-full font-semibold" onClick={() => {navigator.clipboard.writeText(coinAddress);}}>Copy Coin Address</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         )}
       </div>
 
