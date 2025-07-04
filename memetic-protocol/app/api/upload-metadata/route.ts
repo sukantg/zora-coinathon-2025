@@ -9,7 +9,8 @@ export async function POST(req: NextRequest) {
 
     function base64ToFile(base64: string, filename: string): File {
       const arr = base64.split(",");
-      const mime = arr[0].match(/:(.*?);/)[1];
+      const mimeMatch = arr[0].match(/:(.*?);/);
+      const mime = mimeMatch?.[1] || "application/octet-stream";
       const bstr = Buffer.from(arr[1], "base64");
       return new File([bstr], filename, { type: mime });
     }
