@@ -4,7 +4,7 @@ import React, { useState, useRef } from "react";
 import html2canvas from "html2canvas";
 import { useAccount, useConnect, useDisconnect, useWalletClient, usePublicClient } from 'wagmi';
 import { baseSepolia } from "viem/chains";
-import { createCoin } from "@zoralabs/coins-sdk";
+import { createCoin, DeployCurrency } from "@zoralabs/coins-sdk";
 
 export default function MemeHome() {
   const [tab, setTab] = useState<"upload" | "generate">("generate");
@@ -620,7 +620,7 @@ export default function MemeHome() {
                     const coinParams = {
                       ...createMetadataParameters,
                       payoutRecipient: address,
-                      currency: "0x0000000000000000000000000000000000000000", // or DeployCurrency.ZORA
+                      currency: DeployCurrency.ZORA,
                     };
                     const result = await createCoin(coinParams, walletClient!, publicClient!);
                     setTxHash(result.hash ?? '');
