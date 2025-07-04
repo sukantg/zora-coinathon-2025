@@ -4,6 +4,7 @@ import React, { useState, useRef } from "react";
 import html2canvas from "html2canvas";
 import { useAccount, useConnect, useDisconnect, useWalletClient, usePublicClient } from 'wagmi';
 import { baseSepolia } from "viem/chains";
+import { createCoin } from "@zoralabs/coins-sdk";
 
 export default function MemeHome() {
   const [tab, setTab] = useState<"upload" | "generate">("generate");
@@ -94,13 +95,7 @@ export default function MemeHome() {
   };
 
   // Placeholder: handle minting
-  const handleMint = async () => {
-    setStatus("Minting meme as Zora Coin...");
-    // TODO: Call your minting API here
-    setTimeout(() => {
-      setStatus("Meme minted successfully! 🎉");
-    }, 2000);
-  };
+  // const handleMint = async () => { ... }
 
   // Placeholder: handle Farcaster cast
   const handleCast = async () => {

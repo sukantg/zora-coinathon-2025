@@ -15,7 +15,8 @@ export async function POST(req: NextRequest) {
     // Convert base64 image to File
     function base64ToFile(base64: string, filename: string): File {
       const arr = base64.split(",");
-      const mime = arr[0].match(/:(.*?);/)[1];
+      const mimeMatch = arr[0].match(/:(.*?);/);
+      const mime = mimeMatch ? mimeMatch[1] : "application/octet-stream";
       const bstr = Buffer.from(arr[1], "base64");
       return new File([bstr], filename, { type: mime });
     }
@@ -45,7 +46,7 @@ export async function POST(req: NextRequest) {
     const result = await createCoin(coinParams, walletClient, publicClient);
 
     return new Response(JSON.stringify({ hash: result.hash, address: result.address }), { status: 200 });
-  } catch (err: any) {
-    return new Response(JSON.stringify({ error: err.message || String(err) }), { status: 500 });
+  } catch (err: unknown) {
+    return new Response(JSON.stringify({ error: (err as Error).message || String(err) }), { status: 500 });
   }
 } 
