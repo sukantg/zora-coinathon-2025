@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
       .upload(createZoraUploaderForCreator(userAddress));
 
     return new Response(JSON.stringify({ createMetadataParameters }), { status: 200 });
-  } catch (err: any) {
-    return new Response(JSON.stringify({ error: err.message || String(err) }), { status: 500 });
+  } catch (err: unknown) {
+    return new Response(JSON.stringify({ error: (err as Error).message || String(err) }), { status: 500 });
   }
 } 

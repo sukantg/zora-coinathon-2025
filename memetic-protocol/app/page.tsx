@@ -1,35 +1,9 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import html2canvas from "html2canvas";
-import {
-  createMetadataBuilder,
-  createZoraUploaderForCreator,
-  createCoin,
-  DeployCurrency
-} from "@zoralabs/coins-sdk";
-import { createWalletClient, createPublicClient, http } from "viem";
-import { base } from "viem/chains";
 import { useAccount, useConnect, useDisconnect, useWalletClient, usePublicClient } from 'wagmi';
 import { baseSepolia } from "viem/chains";
-
-// TODO: Replace with actual wallet integration
-const userAddress = undefined; // e.g., from wallet connection
-// Use Base Sepolia testnet RPC URL for development
-const rpcUrl = "https://base-sepolia.g.alchemy.com/v2/uvWbkrHIGvftJv0-OWuNkj7rBMIJzyEl";
-
-// Helper to export meme as PNG file
-async function exportMemeAsFile() {
-  const memeNode = document.getElementById("meme-image-container");
-  if (!memeNode) throw new Error("Meme image container not found");
-  const canvas = await html2canvas(memeNode, { backgroundColor: null });
-  return new Promise((resolve, reject) => {
-    canvas.toBlob(blob => {
-      if (!blob) return reject(new Error("Failed to export meme as image"));
-      resolve(new File([blob], "meme.png", { type: "image/png" }));
-    }, "image/png");
-  });
-}
 
 export default function MemeHome() {
   const [tab, setTab] = useState<"upload" | "generate">("generate");
