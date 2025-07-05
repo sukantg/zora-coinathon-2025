@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@zoralabs/coins-sdk": "^0.2.8"
+  }
+}
