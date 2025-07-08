@@ -2,9 +2,9 @@
 
 [ **Live App**](https://memetic-protocol.vercel.app/)
 
-"Turn any meme into a monetizable asset. One cast. One click. One coin."
+"Turn any meme into a monetizable asset. One click. One coin."
 
-Memetic Protocol is a Farcaster Mini App that lets anyone generate or upload a meme, instantly mint it as a Zora Coin (with optional NFT/collectible metadata), and cast it to their followers with a built-in minting button.
+Memetic Protocol is a Mini App that lets anyone generate or upload a meme, instantly mint it as a Zora Coin (with optional NFT/collectible metadata), and share it with a built-in minting button.
 
 It's a creative monetization engine where memes become micro-economies, enabling supporters to invest in viral content and creators to profit from attention—instantly.
 
@@ -33,16 +33,16 @@ The project is inspired by the explosive growth of meme culture and the lack of 
 
 ## What It Does
 
-Memetic Protocol turns memes into Zora Coins directly within Farcaster. The flow is:
+Memetic Protocol turns memes into Zora Coins directly within a Mini App. The flow is:
 
 1. **Create or upload a meme**  
    Users can type an idea (e.g., "Vitalik in a rave") and generate an image + caption using OpenAI (DALL·E + GPT-4) — or upload their own meme.
 2. **Mint as a Zora Coin**  
    The meme is minted as a custom Zora Coin (via CoinV4), with onchain metadata: name, image, description, supply, and optional pricing logic.
-3. **Cast it to Farcaster**  
-   A cast is auto-published including the meme image, description, and a "Mint This Meme" button (via MiniKit frame), allowing others to collect and support.
+3. **Share it in the Mini App**  
+   The meme image, description, and a "Mint This Meme" button are available in the app, allowing others to collect and support.
 4. **Supporters Mint or Trade**  
-   Fans can mint the meme coin directly in the Farcaster client and optionally trade it (Uniswap v4 integration planned).
+   Fans can mint the meme coin directly in the Mini App and optionally trade it (Uniswap v4 integration planned).
 
 ---
 
@@ -62,11 +62,10 @@ Most memes today go viral and die broke. Memetic Protocol brings economic life t
 | ------------- | ----------------------------------------- |
 | Framework     | MiniKit by Base                           |
 | Frontend      | Next.js + Tailwind CSS                    |
-| Wallet        | Farcaster-native via Wagmi + WalletKit    |
+| Wallet        | Wagmi + WalletKit                         |
 | AI Generation | OpenAI GPT-4 (caption) + DALL·E 3 (image) |
 | Media Upload  | NFT.Storage or UploadThing                |
 | Minting       | Zora CoinV4 SDK                           |
-| Casting       | Neynar SDK or Warpcast API                |
 | Hosting       | Vercel (MiniKit optimized)                |
 
 ---
@@ -76,8 +75,8 @@ Most memes today go viral and die broke. Memetic Protocol brings economic life t
 - **Meme Generator:** Upload an image or use AI to create one
 - **GPT-4 Captioner:** Auto-generate meme text based on your prompt or image
 - **Zora Coin Minting:** Every meme is minted into a custom token with metadata
-- **Farcaster Cast Composer:** Automatically casts meme + minting CTA
-- **One-click Minting:** Fans can mint directly from the Farcaster Frame
+- **Minting Composer:** Automatically provides a minting CTA for each meme
+- **One-click Minting:** Fans can mint directly from the Mini App
 - **Public Gallery (WIP):** All minted memes browsable in a memecoin explorer
 
 ---
@@ -89,7 +88,7 @@ graph TD
   A["Meme Input"] -->|"Upload or Prompt"| B["OpenAI Generation"]
   B --> C["Meme Image + Caption"]
   C --> D["Mint on Zora (CoinV4)"]
-  D --> E["Cast to Farcaster (w/ Frame)"]
+  D --> E["Share in Mini App"]
   E --> F["Others Mint or Remix Meme"]
 ```
 
