@@ -103,15 +103,6 @@ export default function MemeHome() {
   // Placeholder: handle minting
   // const handleMint = async () => { ... }
 
-  // Placeholder: handle Farcaster cast
-  const handleCast = async () => {
-    setStatus("Casting to Farcaster...");
-    // TODO: Call your Farcaster API here
-    setTimeout(() => {
-      setStatus("Cast sent! 🚀");
-    }, 1500);
-  };
-
   // Handle drag events for caption
   const handleCaptionMouseDown = (e: React.MouseEvent<HTMLSpanElement, MouseEvent>) => {
     if (!image) return;
