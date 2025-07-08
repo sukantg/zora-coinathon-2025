@@ -55,8 +55,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: json.error || "Failed to post cast" }, { status: 500 });
     }
     return NextResponse.json({ success: true, cast: json });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || String(err) }, { status: 500 });
+  } catch (err: unknown) {
+    let message = "Unknown error";
+    if (err instanceof Error) {
+      message = err.message;
+    } else if (typeof err === "string") {
+      message = err;
+    }
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
