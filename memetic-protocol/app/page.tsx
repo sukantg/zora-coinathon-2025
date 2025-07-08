@@ -217,48 +217,8 @@ export default function MemeHome() {
           >
             {image ? (
               <>
-                {/* Remove image button */}
-                <button
-                  type="button"
-                  aria-label="Remove image"
-                  className="absolute top-3 right-3 z-20 bg-black/60 hover:bg-black/80 text-white rounded-full w-9 h-9 flex items-center justify-center text-2xl font-bold shadow-lg focus:outline-none"
-                  onClick={e => {
-                    e.stopPropagation();
-                    setImage(null);
-                  }}
-                >
-                  ×
-                </button>
-                {/* Download button for AI-generated image */}
-                {tab === "generate" && (
-                  <button
-                    type="button"
-                    aria-label="Download image"
-                    className="absolute top-3 left-3 z-20 bg-black/60 hover:bg-black/80 text-white rounded-full w-9 h-9 flex items-center justify-center text-xl font-bold shadow-lg focus:outline-none"
-                    onClick={async e => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      try {
-                        const memeNode = document.getElementById("meme-image-container");
-                        if (!memeNode) throw new Error("Meme image container not found");
-                        const canvas = await html2canvas(memeNode, { backgroundColor: null, useCORS: true });
-                        const dataUrl = canvas.toDataURL("image/png");
-                        const link = document.createElement('a');
-                        link.href = dataUrl;
-                        link.download = 'meme.png';
-                        link.style.display = 'none';
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                      } catch (err) {
-                        console.error('Download failed:', err);
-                      }
-                    }}
-                  >
-                    ↓
-                  </button>
-                )}
-                {/* Meme image with caption overlay */}
+                {/* Removed cross (remove image) and download button as requested */}
+                {/* Only show the image and caption in the frame */}
                 <img src={image} alt="Meme preview" className="object-contain w-full h-full" draggable={false} onLoad={() => setImageLoaded(true)} onError={() => setImageLoaded(false)} />
                 {caption && (
                   <span
@@ -286,34 +246,6 @@ export default function MemeHome() {
                   >
                     {caption}
                   </span>
-                )}
-                {image && caption && imageLoaded && (
-                  <button
-                    type="button"
-                    aria-label="Download image"
-                    className="absolute top-3 left-3 z-20 bg-black/60 hover:bg-black/80 text-white rounded-full w-9 h-9 flex items-center justify-center text-xl font-bold shadow-lg focus:outline-none"
-                    onClick={async e => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      try {
-                        const memeNode = document.getElementById("meme-image-container");
-                        if (!memeNode) throw new Error("Meme image container not found");
-                        const canvas = await html2canvas(memeNode, { backgroundColor: null, useCORS: true });
-                        const dataUrl = canvas.toDataURL("image/png");
-                        const link = document.createElement('a');
-                        link.href = dataUrl;
-                        link.download = 'meme.png';
-                        link.style.display = 'none';
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                      } catch (err) {
-                        console.error('Download failed:', err);
-                      }
-                    }}
-                  >
-                    ↓
-                  </button>
                 )}
               </>
             ) : (
@@ -597,13 +529,6 @@ export default function MemeHome() {
           >
             Mint Meme
           </button>
-          <button
-            className="flex-1 bg-gradient-to-r from-[var(--app-accent)] to-green-400 text-white px-6 py-3 rounded-full font-bold shadow-lg hover:to-green-500 hover:from-[var(--app-accent-hover)] transition text-lg"
-            onClick={handleCast}
-            disabled={!image || !caption}
-          >
-            Cast to Farcaster
-          </button>
         </div>
 
         {/* Status/Feedback */}
@@ -797,6 +722,12 @@ export default function MemeHome() {
                   <div className="mt-2 flex flex-col gap-3">
                     <a href={`https://testnet.zora.co/coin/bsep:${coinAddress}`} target="_blank" rel="noopener noreferrer" className="w-full bg-gradient-to-r from-green-400 to-[var(--app-accent)] text-white px-4 py-3 rounded-full font-semibold shadow hover:from-green-500 hover:to-[var(--app-accent-hover)] transition text-center text-lg">View on Zora</a>
                     <button className="w-full bg-gray-200 px-4 py-3 rounded-full font-semibold text-black hover:bg-gray-300 transition text-lg" onClick={() => {navigator.clipboard.writeText(coinAddress);}}>Copy Coin Address</button>
+                    <button
+                      className="w-full bg-gradient-to-r from-[var(--app-accent)] to-green-400 text-white px-4 py-3 rounded-full font-semibold shadow hover:to-green-500 hover:from-[var(--app-accent-hover)] transition text-center text-lg"
+                      onClick={handleCast}
+                    >
+                      Cast to Farcaster
+                    </button>
                   </div>
                 </div>
               )}
