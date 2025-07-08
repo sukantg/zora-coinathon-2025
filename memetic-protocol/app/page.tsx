@@ -3,7 +3,7 @@
 import React, { useState, useRef } from "react";
 import html2canvas from "html2canvas";
 import { useAccount, useConnect, useDisconnect, useWalletClient, usePublicClient } from 'wagmi';
-import { baseSepolia } from "viem/chains";
+import { baseSepolia, base } from "viem/chains";
 import { createCoin, DeployCurrency } from "@zoralabs/coins-sdk";
 
 export default function MemeHome() {
@@ -153,12 +153,14 @@ export default function MemeHome() {
   const [mintStatus, setMintStatus] = useState("");
   const [txHash, setTxHash] = useState("");
   const [coinAddress, setCoinAddress] = useState("");
+  const [mintChain, setMintChain] = useState<'base-sepolia' | 'base' | null>(null);
 
   const { address, isConnected } = useAccount();
   const { connect, connectors, isPending } = useConnect();
   const { disconnect } = useDisconnect();
   const { data: walletClient } = useWalletClient();
-  const publicClient = usePublicClient({ chainId: baseSepolia.id });
+  const publicClientBaseSepolia = usePublicClient({ chainId: baseSepolia.id });
+  const publicClientBase = usePublicClient({ chainId: base.id });
 
   const [imageLoaded, setImageLoaded] = useState(false);
 
@@ -189,18 +191,18 @@ export default function MemeHome() {
       {/* Main Meme Creation Card */}
       <div className="bg-[var(--app-card-bg)] border border-[var(--app-card-border)] rounded-3xl shadow-2xl p-8 w-full max-w-lg flex flex-col items-center transition-all duration-300">
         {/* Tabs */}
-        <div className="flex mb-8 w-full gap-2">
+        <div className="flex mb-8 w-full">
           <button
             className={`flex-1 py-3 rounded-l-full font-semibold transition-colors text-lg shadow-sm ${tab === "upload" ? "bg-[var(--app-accent)] text-white" : "bg-[var(--app-gray-dark)] text-[var(--app-foreground-muted)]"}`}
             onClick={() => setTab("upload")}
-            style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0 }}
+            style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0, marginRight: 0 }}
           >
             Upload Image
           </button>
           <button
             className={`flex-1 py-3 rounded-r-full font-semibold transition-colors text-lg shadow-sm ${tab === "generate" ? "bg-[var(--app-accent)] text-white" : "bg-[var(--app-gray-dark)] text-[var(--app-foreground-muted)]"}`}
             onClick={() => setTab("generate")}
-            style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}
+            style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0, marginLeft: 0 }}
           >
             Generate with AI
           </button>
@@ -557,7 +559,25 @@ export default function MemeHome() {
               >
                 ×
               </button>
-              <h2 className="text-xl font-bold mb-2">Mint Meme Coin</h2>
+              <h2 className="text-xl font-bold mb-2 flex items-center justify-between">
+                Mint Meme Coin
+                <button
+                  className="ml-2 px-4 py-2 text-sm bg-gray-200 text-gray-700 rounded-full hover:bg-red-100 hover:text-red-600 font-semibold transition"
+                  title="Clear All"
+                  onClick={() => {
+                    setImage(null);
+                    setCaption("");
+                    setCoinName("");
+                    setCoinSymbol("");
+                    setTxHash("");
+                    setCoinAddress("");
+                    setMintStatus("");
+                    setMintChain(null);
+                  }}
+                >
+                  Clear
+                </button>
+              </h2>
               {/* Meme Preview */}
               <div className="mb-4 flex flex-col items-center">
                 {image && (
@@ -633,66 +653,131 @@ export default function MemeHome() {
                   {isPending ? 'Connecting...' : 'Connect Wallet'}
                 </button>
               ) : null}
-              <button
-                className="w-full bg-gradient-to-r from-green-400 to-[var(--app-accent)] text-white px-6 py-3 rounded-full font-bold shadow-lg hover:from-green-500 hover:to-[var(--app-accent-hover)] transition text-lg mb-4 disabled:opacity-60"
-                onClick={async () => {
-                  if (!isConnected || !address) {
-                    setMintStatus('Please connect your wallet.');
-                    return;
-                  }
-                  if (!publicClient) {
-                    setMintStatus('Public client not available.');
-                    return;
-                  }
-                  if (!walletClient) {
-                    setMintStatus('Wallet client not available.');
-                    return;
-                  }
-                  if (!imageLoaded) {
-                    setMintStatus('Image not fully loaded.');
-                    return;
-                  }
-                  setMintStatus("Uploading meme and metadata...");
-                  try {
-                    const memeNode = document.getElementById("meme-image-container");
-                    if (!memeNode) throw new Error("Meme image container not found");
-                    const canvas = await html2canvas(memeNode, { backgroundColor: null, useCORS: true });
-                    const memeImage = canvas.toDataURL("image/png");
-                    // 1. Upload metadata and get parameters
-                    const res = await fetch("/api/upload-metadata", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({
-                        coinName,
-                        coinSymbol,
-                        memeImage, // composited meme
-                        userAddress: address,
-                      }),
-                    });
-                    const { createMetadataParameters, error } = await res.json();
-                    if (!res.ok || error) {
-                      setMintStatus("Error: " + (error || "Failed to upload metadata"));
+              {/* Mint Buttons for Both Chains */}
+              <div className="flex gap-4 mb-4">
+                <button
+                  className="flex-1 bg-gradient-to-r from-green-400 to-[var(--app-accent)] text-white px-6 py-3 rounded-full font-bold shadow-lg hover:from-green-500 hover:to-[var(--app-accent-hover)] transition text-lg disabled:opacity-60"
+                  onClick={async () => {
+                    setMintChain('base-sepolia');
+                    if (!isConnected || !address) {
+                      setMintStatus('Please connect your wallet.');
                       return;
                     }
-                    // 2. Mint using wallet
-                    setMintStatus("Minting coin on Zora...");
-                    const coinParams = {
-                      ...createMetadataParameters,
-                      payoutRecipient: address,
-                      currency: DeployCurrency.ZORA,
-                    };
-                    const result = await createCoin(coinParams, walletClient!, publicClient!);
-                    setTxHash(result.hash ?? '');
-                    setCoinAddress(result.address ?? '');
-                    setMintStatus("Coin minted successfully!");
-                  } catch (err) {
-                    setMintStatus("Error: " + (err && typeof err === "object" && "message" in err ? err.message : String(err)));
-                  }
-                }}
-                disabled={!coinName || !coinSymbol || mintStatus === "Minting..." || !isConnected || !imageLoaded}
-              >
-                {mintStatus === "Minting..." ? "Minting..." : "Mint"}
-              </button>
+                    if (!publicClientBaseSepolia) {
+                      setMintStatus('Public client not available.');
+                      return;
+                    }
+                    if (!walletClient) {
+                      setMintStatus('Wallet client not available.');
+                      return;
+                    }
+                    if (!imageLoaded) {
+                      setMintStatus('Image not fully loaded.');
+                      return;
+                    }
+                    setMintStatus("Uploading meme and metadata...");
+                    try {
+                      const memeNode = document.getElementById("meme-image-container");
+                      if (!memeNode) throw new Error("Meme image container not found");
+                      const canvas = await html2canvas(memeNode, { backgroundColor: null, useCORS: true });
+                      const memeImage = canvas.toDataURL("image/png");
+                      // 1. Upload metadata and get parameters
+                      const res = await fetch("/api/upload-metadata", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          coinName,
+                          coinSymbol,
+                          memeImage, // composited meme
+                          userAddress: address,
+                        }),
+                      });
+                      const { createMetadataParameters, error } = await res.json();
+                      if (!res.ok || error) {
+                        setMintStatus("Error: " + (error || "Failed to upload metadata"));
+                        return;
+                      }
+                      // 2. Mint using wallet
+                      setMintStatus("Minting coin on Zora...");
+                      const coinParams = {
+                        ...createMetadataParameters,
+                        payoutRecipient: address,
+                        currency: DeployCurrency.ZORA,
+                      };
+                      const result = await createCoin(coinParams, walletClient!, publicClientBaseSepolia!);
+                      setTxHash(result.hash ?? '');
+                      setCoinAddress(result.address ?? '');
+                      setMintStatus("Coin minted successfully!");
+                    } catch (err) {
+                      setMintStatus("Error: " + (err && typeof err === "object" && "message" in err ? err.message : String(err)));
+                    }
+                  }}
+                  disabled={!coinName || !coinSymbol || mintStatus === "Minting..." || !isConnected || !imageLoaded}
+                >
+                  {mintStatus === "Minting..." && mintChain === 'base-sepolia' ? "Minting..." : "Mint (Base Sepolia)"}
+                </button>
+                <button
+                  className="flex-1 bg-gradient-to-r from-blue-500 to-blue-700 text-white px-6 py-3 rounded-full font-bold shadow-lg hover:from-blue-600 hover:to-blue-800 transition text-lg disabled:opacity-60"
+                  onClick={async () => {
+                    setMintChain('base');
+                    if (!isConnected || !address) {
+                      setMintStatus('Please connect your wallet.');
+                      return;
+                    }
+                    if (!walletClient) {
+                      setMintStatus('Wallet client not available.');
+                      return;
+                    }
+                    if (!publicClientBase) {
+                      setMintStatus('Public client not available.');
+                      return;
+                    }
+                    if (!imageLoaded) {
+                      setMintStatus('Image not fully loaded.');
+                      return;
+                    }
+                    setMintStatus("Uploading meme and metadata...");
+                    try {
+                      const memeNode = document.getElementById("meme-image-container");
+                      if (!memeNode) throw new Error("Meme image container not found");
+                      const canvas = await html2canvas(memeNode, { backgroundColor: null, useCORS: true });
+                      const memeImage = canvas.toDataURL("image/png");
+                      // 1. Upload metadata and get parameters
+                      const res = await fetch("/api/upload-metadata", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          coinName,
+                          coinSymbol,
+                          memeImage, // composited meme
+                          userAddress: address,
+                        }),
+                      });
+                      const { createMetadataParameters, error } = await res.json();
+                      if (!res.ok || error) {
+                        setMintStatus("Error: " + (error || "Failed to upload metadata"));
+                        return;
+                      }
+                      setMintStatus("Minting coin on Zora (Base)...");
+                      // Use Base mainnet
+                      const coinParams = {
+                        ...createMetadataParameters,
+                        payoutRecipient: address,
+                        currency: DeployCurrency.ZORA,
+                      };
+                      const result = await createCoin(coinParams, walletClient!, publicClientBase!);
+                      setTxHash(result.hash ?? '');
+                      setCoinAddress(result.address ?? '');
+                      setMintStatus("Coin minted successfully!");
+                    } catch (err) {
+                      setMintStatus("Error: " + (err && typeof err === "object" && "message" in err ? err.message : String(err)));
+                    }
+                  }}
+                  disabled={!coinName || !coinSymbol || mintStatus === "Minting..." || !isConnected || !imageLoaded}
+                >
+                  {mintStatus === "Minting..." && mintChain === 'base' ? "Minting..." : "Mint (Base)"}
+                </button>
+              </div>
               {/* Minting Status & Results */}
               {mintStatus && !txHash && (
                 <div className="mt-2 text-center text-base flex items-center justify-center gap-2">
@@ -713,14 +798,27 @@ export default function MemeHome() {
                   <div className="text-2xl font-extrabold text-green-600 mb-3">Coin minted successfully!</div>
                   <div className="flex flex-col items-center gap-2 mb-2">
                     <div className="text-lg font-semibold">Coin Address Link:</div>
-                    <a href={`https://sepolia.basescan.org/address/${coinAddress}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline text-lg break-all">{coinAddress}</a>
+                    {mintChain === 'base-sepolia' ? (
+                      <a href={`https://sepolia.basescan.org/address/${coinAddress}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline text-lg break-all">{coinAddress}</a>
+                    ) : (
+                      <a href={`https://basescan.org/address/${coinAddress}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline text-lg break-all">{coinAddress}</a>
+                    )}
                   </div>
                   <div className="flex flex-col items-center gap-2 mb-4">
                     <div className="text-lg font-semibold">Coin Address:</div>
                     <span className="font-mono text-base break-all bg-gray-100 rounded px-2 py-1">{coinAddress}</span>
                   </div>
                   <div className="mt-2 flex flex-col gap-3">
-                    <a href={`https://testnet.zora.co/coin/bsep:${coinAddress}`} target="_blank" rel="noopener noreferrer" className="w-full bg-gradient-to-r from-green-400 to-[var(--app-accent)] text-white px-4 py-3 rounded-full font-semibold shadow hover:from-green-500 hover:to-[var(--app-accent-hover)] transition text-center text-lg">View on Zora</a>
+                    {mintChain === 'base-sepolia' ? (
+                      <a href={`https://testnet.zora.co/coin/bsep:${coinAddress}`} target="_blank" rel="noopener noreferrer" className="w-full bg-gradient-to-r from-green-400 to-[var(--app-accent)] text-white px-4 py-3 rounded-full font-semibold shadow hover:from-green-500 hover:to-[var(--app-accent-hover)] transition text-center text-lg">View on Zora</a>
+                    ) : (
+                      <a href={`https://zora.co/coin/base:${coinAddress}?referrer=${address}`} target="_blank" rel="noopener noreferrer" className="w-full bg-gradient-to-r from-blue-500 to-blue-700 text-white px-4 py-3 rounded-full font-semibold shadow hover:from-blue-600 hover:to-blue-800 transition text-center text-lg">View on Zora</a>
+                    )}
+                    {mintChain === 'base-sepolia' ? (
+                      <a href={`https://sepolia.basescan.org/tx/${txHash}`} target="_blank" rel="noopener noreferrer" className="w-full bg-gray-200 px-4 py-3 rounded-full font-semibold text-black hover:bg-gray-300 transition text-lg">View on BaseScan</a>
+                    ) : (
+                      <a href={`https://basescan.org/tx/${txHash}`} target="_blank" rel="noopener noreferrer" className="w-full bg-gray-200 px-4 py-3 rounded-full font-semibold text-black hover:bg-gray-300 transition text-lg">View on BaseScan</a>
+                    )}
                     <button className="w-full bg-gray-200 px-4 py-3 rounded-full font-semibold text-black hover:bg-gray-300 transition text-lg" onClick={() => {navigator.clipboard.writeText(coinAddress);}}>Copy Coin Address</button>
                     <button
                       className="w-full bg-gradient-to-r from-[var(--app-accent)] to-green-400 text-white px-4 py-3 rounded-full font-semibold shadow hover:to-green-500 hover:from-[var(--app-accent-hover)] transition text-center text-lg"
