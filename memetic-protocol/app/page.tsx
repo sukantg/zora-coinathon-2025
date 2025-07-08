@@ -523,15 +523,17 @@ export default function MemeHome() {
         )}
 
         {/* Mint & Share Buttons */}
-        <div className="w-full flex gap-6 mb-2 mt-2">
-          <button
-            className="flex-1 bg-gradient-to-r from-green-400 to-[var(--app-accent)] text-white px-6 py-3 rounded-full font-bold shadow-lg hover:from-green-500 hover:to-[var(--app-accent-hover)] transition text-lg"
-            onClick={() => setShowCoinForm(true)}
-            disabled={!image}
-          >
-            Mint Meme
-          </button>
-        </div>
+        {tab === "upload" && (
+          <div className="w-full flex gap-6 mb-2 mt-2">
+            <button
+              className="flex-1 bg-gradient-to-r from-green-400 to-[var(--app-accent)] text-white px-6 py-3 rounded-full font-bold shadow-lg hover:from-green-500 hover:to-[var(--app-accent-hover)] transition text-lg"
+              onClick={() => setShowCoinForm(true)}
+              disabled={!image}
+            >
+              Mint Meme
+            </button>
+          </div>
+        )}
 
         {/* Status/Feedback */}
         {status && (
@@ -820,12 +822,6 @@ export default function MemeHome() {
                       <a href={`https://basescan.org/tx/${txHash}`} target="_blank" rel="noopener noreferrer" className="w-full bg-gray-200 px-4 py-3 rounded-full font-semibold text-black hover:bg-gray-300 transition text-lg">View on BaseScan</a>
                     )}
                     <button className="w-full bg-gray-200 px-4 py-3 rounded-full font-semibold text-black hover:bg-gray-300 transition text-lg" onClick={() => {navigator.clipboard.writeText(coinAddress);}}>Copy Coin Address</button>
-                    <button
-                      className="w-full bg-gradient-to-r from-[var(--app-accent)] to-green-400 text-white px-4 py-3 rounded-full font-semibold shadow hover:to-green-500 hover:from-[var(--app-accent-hover)] transition text-center text-lg"
-                      onClick={handleCast}
-                    >
-                      Cast to Farcaster
-                    </button>
                   </div>
                 </div>
               )}
